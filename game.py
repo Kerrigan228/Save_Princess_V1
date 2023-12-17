@@ -2,13 +2,56 @@ import pygame
 import sys
 import os
 import random
+import tkinter as tk
+from tkinter import ttk
+
+def assign_value():
+    global SCREEN_HEIGHT, SCREEN_WIDTH
+    if selected_size.get() == "1920x1080":
+        SCREEN_HEIGHT = 1080
+        SCREEN_WIDTH = 1920
+    elif selected_size.get() == "1280x720":
+        SCREEN_HEIGHT = 720
+        SCREEN_WIDTH = 1280
+    elif selected_size.get() == "800x600":
+        SCREEN_HEIGHT = 600
+        SCREEN_WIDTH = 800
+    variable.set(f"Ширина: {SCREEN_WIDTH}, Высота: {SCREEN_HEIGHT}")
+    root.destroy()
+
+root = tk.Tk()
+root.geometry("300x250")  # Увеличил размер, чтобы разместить элементы более равномерно
+
+variable = tk.StringVar()
+label = tk.Label(root, textvariable=variable)
+label.pack(pady=10)  # Отступ сверху
+
+# Добавляем вкладку
+tab_control = ttk.Notebook(root)
+
+tab1 = ttk.Frame(tab_control)
+tab_control.add(tab1, text='Выбор размера')
+
+selected_size = tk.StringVar(value="Выберите размер")
+
+sizes = ["1920x1080", "1280x720", "800x600"]
+
+for size in sizes:
+    tk.Radiobutton(tab1, text=size, variable=selected_size, value=size).pack()
+
+button = tk.Button(root, text="Начать игру", command=assign_value)
+
+
+tab_control.pack(expand=1, fill="both")
+button.pack(pady=40)  # Отступ снизу
+root.mainloop()
+
 
 # Инициализация Pygame
 pygame.init()
 
 # Размеры экрана
-SCREEN_WIDTH = 1600
-SCREEN_HEIGHT = 1200
+
 
 # Размеры карты
 MAP_WIDTH = 1600
