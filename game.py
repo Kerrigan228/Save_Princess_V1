@@ -124,7 +124,7 @@ class Player(pygame.sprite.Sprite):
         self.current_frame = (self.current_frame + 1) % (len(self.images[direction]) * self.animation_speed)
         frame_index = self.current_frame // self.animation_speed
         self.image = self.images[direction][frame_index]
-
+    
     def attack(self, enemies_group):
         for enemy in pygame.sprite.spritecollide(self, enemies_group, False):
             # Уменьшаем здоровье врага
@@ -174,7 +174,7 @@ class HealthBar(pygame.sprite.Sprite):
 class AttackButton(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.Surface((50, 50))
+        self.image = pygame.Surface((1, 1))
         self.image.fill(RED)
         self.rect = self.image.get_rect()
         self.rect.topleft = (10, SCREEN_HEIGHT - 60)
@@ -270,9 +270,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Левая кнопка мыши
+        elif event.type == pygame.MOUSEBUTTONDOWN:  # Левая кнопка мыши
             # При нажатии на кнопку атаки или левой кнопки мыши атакуем ближайшего врага
-            if attack_button.rect.collidepoint(event.pos):
+            
                 attack_sound.play()  # Проигрываем звук атаки
                 player.attack(enemies_group)
 
