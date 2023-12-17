@@ -2,6 +2,7 @@ import pygame
 import sys
 import os
 import random
+import math
 
 # Инициализация Pygame
 pygame.init()
@@ -34,6 +35,11 @@ class Player(pygame.sprite.Sprite):
         self.experience = 0
         self.speed = speed
 
+        # Инициализация полосы здоровья
+        self.max_health = 100
+        self.current_health = self.max_health
+        self.health_bar = HealthBar(self.max_health)
+
     def load_images(self):
         self.images = {"up": [], "down": [], "left": [], "right": []}
         for direction in self.images.keys():
@@ -41,6 +47,9 @@ class Player(pygame.sprite.Sprite):
                 image = pygame.image.load(path)
                 image = pygame.transform.scale(image, (50, 75))
                 self.images[direction].append(image)
+  # Добавим переменную для жизней
+        self.max_lives = 3
+        self.current_lives = self.max_lives
 
     def update(self):
         keys = pygame.key.get_pressed()
@@ -57,7 +66,6 @@ class Player(pygame.sprite.Sprite):
             direction = "up"
         if keys[pygame.K_DOWN]:
             self.rect.y += self.speed
-            direction = "down"
 
         if direction:
             self.animate(direction)
@@ -65,11 +73,40 @@ class Player(pygame.sprite.Sprite):
         # Обновление зоны атаки
         self.attack_range.center = self.rect.center
 
+        # Обновление полосы здоровья
+        self.health_bar.update(self.rect.x, self.rect.y, self.current_health)
+ # Обновление счетчика жизней
+        font = pygame.font.Font(None, 36)
+        lives_text = font.render(f"Жизни: {self.current_lives}", True, WHITE)
+        screen.blit(lives_text, (10, 50))
+        
     def animate(self, direction):
         self.current_frame = (self.current_frame + 1) % (len(self.images[direction]) * self.animation_speed)
         frame_index = self.current_frame // self.animation_speed
         self.image = self.images[direction][frame_index]
 
+    def attack(self, enemies_group):
+        for enemy in pygame.sprite.spritecollide(self, enemies_group, False):
+            # Уменьшаем здоровье врага
+            enemy.current_health -= 20
+            if enemy.current_health <= 0:
+                # Увеличиваем опыт игрока за победу
+                self.experience += 50
+                # Убираем врага из группы спрайтов
+                enemy.kill()
+            else:
+                # Изменяем состояние врага на "атака"
+                enemy.state = "атака"
+        # Пример: Если игрок потерял все жизни, то завершаем игру
+        if self.current_health <= 0:
+            self.current_lives -= 1
+            if self.current_lives <= 0:
+                pygame.quit()
+                sys.exit()
+            else:
+                # Восстановление здоровья при потере жизни
+                self.current_health = self.max_health
+                
 # Класс для отображения полосы здоровья
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self, max_health):
@@ -102,31 +139,38 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__()
         original_image = pygame.image.load(image_path)
         # Уменьшаем размер изображения до 30x30 пикселей
-        self.image = pygame.transform.scale(original_image, (50, 50))
+        self.image = pygame.transform.scale(original_image, (100, 100))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.direction = random.choice(["left", "right", "up", "down"])
         self.max_health = 100
         self.current_health = self.max_health
         self.health_bar = HealthBar(self.max_health)
+        self.attack_cooldown = 0
+        self.velocity = pygame.Vector2(1, 0).rotate(random.randint(0, 360))  # Начальная скорость и направление
 
     def update(self):
-        if self.direction == "left":
-            self.rect.x -= 2
-        elif self.direction == "right":
-            self.rect.x += 2
-        elif self.direction == "up":
-            self.rect.y -= 2
-        elif self.direction == "down":
-            self.rect.y += 2
+        # Логика для движения с использованием вектора скорости
+        self.rect.x += self.velocity.x
+        self.rect.y += self.velocity.y
 
-        # Простая логика изменения направления
-        if random.randint(0, 100) < 2:  # Шанс изменения направления: 2%
-            self.direction = random.choice(["left", "right", "up", "down"])
+        # Пример: если враг достиг игрока и задержка атаки прошла,
+        # то игрок теряет здоровье
+        if self.rect.colliderect(player.rect) and self.attack_cooldown == 0:
+            player.current_health -= 5  # Уменьшение урона в 3 раза
+            self.attack_cooldown = 60  # Задержка атаки (в кадрах)
+
+        # Обновление задержки атаки
+        if self.attack_cooldown > 0:
+            self.attack_cooldown -= 1
 
         # Обновление полосы здоровья
         self.health_bar.update(self.rect.x, self.rect.y, self.current_health)
+
+        # Простая логика изменения направления
+        if random.randint(0, 100) < 2:  # Шанс изменения направления: 2%
+            self.velocity.rotate_ip(random.randint(-45, 15))  # Случайный поворот вектора скорости
+
 
 # Создание экрана
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -184,15 +228,7 @@ while running:
             # При нажатии на кнопку атаки или левой кнопки мыши атакуем ближайшего врага
             if attack_button.rect.collidepoint(event.pos):
                 attack_sound.play()  # Проигрываем звук атаки
-                for enemy in pygame.sprite.spritecollide(player, enemies_group, False):
-                    # Уменьшаем здоровье врага
-                    enemy.current_health -= 20
-                    enemy_hit_sound.play()  # Проигрываем звук попадания по врагу
-                    if enemy.current_health <= 0:
-                        # Увеличиваем опыт игрока за победу
-                        player.experience += 50
-                        # Убираем врага из группы спрайтов
-                        enemy.kill()
+                player.attack(enemies_group)
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -213,9 +249,11 @@ while running:
 
     # Обновление спрайтов
     all_sprites.update()
+    enemies_group.update()
 
     # Отрисовка спрайтов
     all_sprites.draw(screen)
+    enemies_group.draw(screen)
 
     # Вывод опыта на экран
     font = pygame.font.Font(None, 36)
