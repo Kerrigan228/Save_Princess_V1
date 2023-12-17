@@ -50,9 +50,6 @@ root.mainloop()
 # Инициализация Pygame
 pygame.init()
 
-# Размеры экрана
-SCREEN_WIDTH = 1600
-SCREEN_HEIGHT = 1200
 
 # Размеры карты
 MAP_WIDTH = 1600
