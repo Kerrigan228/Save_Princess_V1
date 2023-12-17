@@ -97,16 +97,22 @@ class Player(pygame.sprite.Sprite):
             else:
                 # Изменяем состояние врага на "атака"
                 enemy.state = "атака"
-        # Пример: Если игрок потерял все жизни, то завершаем игру
+         # Пример: Если игрок потерял все жизни, то завершаем игру
         if self.current_health <= 0:
             self.current_lives -= 1
             if self.current_lives <= 0:
+                # Выводим текст "Игра окончена"
+                font = pygame.font.Font(None, 72)
+                game_over_text = font.render("Игра окончена", True, WHITE)
+                screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2 - 50))
+                pygame.display.flip()
+                pygame.time.delay(3000)  # Задержка перед завершением (в миллисекундах)
                 pygame.quit()
                 sys.exit()
             else:
                 # Восстановление здоровья при потере жизни
                 self.current_health = self.max_health
-                
+
 # Класс для отображения полосы здоровья
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self, max_health):
